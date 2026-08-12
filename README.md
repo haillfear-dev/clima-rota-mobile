@@ -1,6 +1,6 @@
 # Vora Mobile MVP v0.1
 
-Assistente de preparação de deslocamentos feito com React Native, Expo e TypeScript.
+Assistente de preparação de deslocamentos feito com React Native, Expo SDK 54 e TypeScript.
 
 ## Configuração
 
