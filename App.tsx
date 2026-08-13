@@ -45,8 +45,8 @@ export default function App() {
     setPlaces(savedPlaces); setRoutes(favoriteRoutes);
   }
   function setField(field: Field, place: Place) {
-    if (field === 'origin') { setOrigin(place); setOriginText(shortAddress(place.name)); }
-    else { setDestination(place); setDestinationText(shortAddress(place.name)); }
+    if (field === 'origin') { setOrigin(place); setOriginText(shortAddress(place)); }
+    else { setDestination(place); setDestinationText(shortAddress(place)); }
     setTrip(undefined);
   }
   async function useLocation(field: Field = 'origin') {

@@ -2,6 +2,26 @@ export type Place = {
   name: string;
   latitude: number;
   longitude: number;
+  geography?: GeographicMetadata;
+};
+
+export type GeographicKind = 'poi' | 'address' | 'street' | 'neighbourhood' | 'city' | 'region' | 'country' | 'unknown';
+
+/** Provider-neutral details retained alongside the original selected label. */
+export type GeographicMetadata = {
+  originalLabel: string;
+  kind: GeographicKind;
+  name?: string;
+  houseNumber?: string;
+  street?: string;
+  neighbourhood?: string;
+  district?: string;
+  city?: string;
+  county?: string;
+  region?: string;
+  regionCode?: string;
+  country?: string;
+  countryCode?: string;
 };
 
 export type TravelMode = 'driving' | 'transit' | 'walking' | 'bicycling';

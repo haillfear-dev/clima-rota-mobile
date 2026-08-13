@@ -1,17 +1,74 @@
-const streetAbbreviations: Array<[RegExp, string]> = [
-  [/^Rua\s+/i, 'R. '], [/^Avenida\s+/i, 'Av. '], [/^Rodovia\s+/i, 'Rod. '],
-  [/^Travessa\s+/i, 'Tv. '], [/^Alameda\s+/i, 'Al. '],
-];
+import type { GeographicMetadata, Place } from '../types';
 
-export function addressParts(address: string): { title: string; subtitle: string } {
-  const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
-  let title = parts[0] || 'Local selecionado';
-  for (const [pattern, replacement] of streetAbbreviations) title = title.replace(pattern, replacement);
-  const subtitle = parts.slice(1).find((part) => !/^\d+$/.test(part)) || '';
-  return { title, subtitle };
+const streetAbbreviations: Array<[RegExp, string]> = [
+  [/^Rua\s+/iu, 'R. '], [/^Avenida\s+/iu, 'Av. '], [/^Rodovia\s+/iu, 'Rod. '],
+  [/^Travessa\s+/iu, 'Tv. '], [/^Alameda\s+/iu, 'Al. '],
+];
+const ambiguousLocalities = new Set(['center', 'centre', 'centro', 'downtown', 'jardim américa', 'jardim america']);
+
+export type AddressDisplay = { title: string; subtitle: string };
+
+function compactStreet(value: string): string {
+  let street = value.replace(/,?\s+\d+[\w/-]*$/u, '').trim();
+  for (const [pattern, replacement] of streetAbbreviations) street = street.replace(pattern, replacement);
+  return street;
 }
 
-export function shortAddress(address: string): string {
-  const { title, subtitle } = addressParts(address);
+function legacyParts(label: string): AddressDisplay {
+  const parts = label.split(',').map((part) => part.trim()).filter(Boolean);
+  return {
+    title: compactStreet(parts[0] || 'Local selecionado'),
+    subtitle: parts.slice(1).find((part) => !/^\d+[\w/-]*$/u.test(part)) || '',
+  };
+}
+
+function first(...values: Array<string | undefined>): string {
+  return values.find((value) => !!value?.trim())?.trim() ?? '';
+}
+
+function structuredParts(data: GeographicMetadata): AddressDisplay {
+  const legacy = legacyParts(data.originalLabel);
+  let title = '';
+  let subtitle = '';
+  switch (data.kind) {
+    case 'poi':
+      title = first(data.name, legacy.title);
+      subtitle = first(data.neighbourhood, data.city, data.region);
+      break;
+    case 'street':
+    case 'address':
+      title = compactStreet(first(data.street, data.name, legacy.title));
+      subtitle = first(data.neighbourhood, data.district, data.city, data.region);
+      break;
+    case 'neighbourhood':
+      title = first(data.neighbourhood, data.district, data.name, legacy.title);
+      if (ambiguousLocalities.has(title.toLocaleLowerCase())) subtitle = first(data.city, data.regionCode, data.region);
+      break;
+    case 'city':
+      title = first(data.city, data.name, legacy.title);
+      break;
+    case 'region':
+      title = first(data.region, data.county, data.name, legacy.title);
+      break;
+    case 'country':
+      title = first(data.country, data.name, legacy.title);
+      break;
+    default:
+      title = legacy.title;
+      subtitle = legacy.subtitle;
+  }
+  return { title: title || 'Local selecionado', subtitle: subtitle === title ? '' : subtitle };
+}
+
+/** Supports structured places and legacy favorites that contain only an address string. */
+export function addressParts(place: Place | string): AddressDisplay {
+  if (typeof place === 'string') return legacyParts(place);
+  return place.geography ? structuredParts(place.geography) : legacyParts(place.name);
+}
+
+export function displayName(place: Place | string): string {
+  const { title, subtitle } = addressParts(place);
   return [title, subtitle].filter(Boolean).join(', ');
 }
+
+export const shortAddress = displayName;

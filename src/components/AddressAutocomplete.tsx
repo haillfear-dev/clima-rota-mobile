@@ -58,7 +58,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
   }, [value, proximity]);
 
   function select(suggestion: AddressSuggestion) {
-    selectedValue.current = shortAddress(suggestion.name);
+    selectedValue.current = shortAddress(suggestion);
     setSuggestions([]);
     setMessage(undefined);
     onSelect(suggestion);

@@ -1,4 +1,4 @@
-import type { AddressSuggestion, Place } from '../types';
+import type { AddressSuggestion, GeographicKind, GeographicMetadata, Place } from '../types';
 
 export class GeocodingConfigurationError extends Error {}
 
@@ -9,6 +9,7 @@ export type GeocodingProvider = {
 type GeoapifyFeature = {
   properties: {
     place_id?: string;
+    result_type?: string;
     formatted?: string;
     name?: string;
     housenumber?: string;
@@ -17,10 +18,35 @@ type GeoapifyFeature = {
     district?: string;
     city?: string;
     state?: string;
+    state_code?: string;
+    county?: string;
+    country?: string;
+    country_code?: string;
     lat: number;
     lon: number;
   };
 };
+
+function geographicKind(resultType?: string): GeographicKind {
+  if (['amenity', 'building', 'commercial', 'tourism', 'leisure', 'sport', 'airport'].includes(resultType ?? '')) return 'poi';
+  if (resultType === 'country') return 'country';
+  if (['state', 'region', 'province', 'county'].includes(resultType ?? '')) return 'region';
+  if (['city', 'town', 'village', 'municipality'].includes(resultType ?? '')) return 'city';
+  if (['suburb', 'district', 'neighbourhood', 'quarter'].includes(resultType ?? '')) return 'neighbourhood';
+  if (resultType === 'street') return 'street';
+  if (['postcode', 'formatted', 'address'].includes(resultType ?? '')) return 'address';
+  return 'unknown';
+}
+
+function geography(feature: GeoapifyFeature): GeographicMetadata {
+  const p = feature.properties;
+  return {
+    originalLabel: p.formatted ?? p.name ?? 'Local encontrado', kind: geographicKind(p.result_type),
+    name: p.name, houseNumber: p.housenumber, street: p.street, neighbourhood: p.suburb,
+    district: p.district, city: p.city, county: p.county, region: p.state,
+    regionCode: p.state_code, country: p.country, countryCode: p.country_code,
+  };
+}
 
 const apiKey = process.env.EXPO_PUBLIC_GEOAPIFY_API_KEY;
 
@@ -60,6 +86,7 @@ export const geoapifyProvider: GeocodingProvider = {
         subtitle,
         latitude: feature.properties.lat,
         longitude: feature.properties.lon,
+        geography: geography(feature),
       };
     });
   },
@@ -73,5 +100,6 @@ export async function coordinatesToPlace(latitude: number, longitude: number): P
   const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params}`);
   if (!response.ok) return { name: 'Minha localização atual', latitude, longitude };
   const data = await response.json() as { features?: GeoapifyFeature[] };
-  return { name: data.features?.[0]?.properties.formatted ?? 'Minha localização atual', latitude, longitude };
+  const feature = data.features?.[0];
+  return { name: feature?.properties.formatted ?? 'Minha localização atual', latitude, longitude, geography: feature ? geography(feature) : undefined };
 }
