@@ -72,3 +72,14 @@ export function displayName(place: Place | string): string {
 }
 
 export const shortAddress = displayName;
+
+/**
+ * Label for an editable origin/destination field. Unlike card summaries, this
+ * confirms the exact result selected by the user instead of adding or promoting
+ * geographic context.
+ */
+export function selectionDisplayName(place: Place): string {
+  if (place.selectionLabel?.trim()) return place.selectionLabel.trim();
+  if (place.geography?.name?.trim()) return place.geography.name.trim();
+  return legacyParts(place.geography?.originalLabel ?? place.name).title;
+}

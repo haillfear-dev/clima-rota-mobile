@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { geocodingService, GeocodingConfigurationError } from '../services/geocoding';
 import { colors, radius, spacing } from '../theme';
 import type { AddressSuggestion, Place } from '../types';
-import { shortAddress } from '../utils/address';
+import { selectionDisplayName } from '../utils/address';
 
 type Props = {
   label: string;
@@ -15,16 +15,19 @@ type Props = {
   onClear?: () => void;
   variant?: 'origin' | 'destination';
   proximity?: Place;
+  selectedPlace?: Place;
+  onEdit?: () => void;
 };
 
-export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, onClear, variant = 'origin', proximity }: Props) {
+export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, onClear, onEdit, selectedPlace, variant = 'origin', proximity }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>();
   const selectedValue = useRef<string | undefined>(undefined);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (value === selectedValue.current || value.trim().length < 3) {
+    if (selectedPlace || value === selectedValue.current || value.trim().length < 3) {
       setSuggestions([]);
       setMessage(undefined);
       return;
@@ -55,10 +58,16 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
       clearTimeout(timer);
       controller.abort();
     };
-  }, [value, proximity]);
+  }, [value, proximity, selectedPlace]);
+
+  function editSelection() {
+    selectedValue.current = undefined;
+    onEdit?.();
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
 
   function select(suggestion: AddressSuggestion) {
-    selectedValue.current = shortAddress(suggestion);
+    selectedValue.current = selectionDisplayName(suggestion);
     setSuggestions([]);
     setMessage(undefined);
     onSelect(suggestion);
@@ -69,17 +78,24 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputBox}>
         <View style={[styles.pin, { backgroundColor: variant === 'origin' ? colors.turquoise : colors.orange }]}><Ionicons name={variant === 'origin' ? 'ellipse' : 'location'} size={variant === 'origin' ? 9 : 16} color="#fff" /></View>
-        <TextInput
-          value={value}
-          onChangeText={(text) => {
-            selectedValue.current = undefined;
-            onChangeText(text);
-          }}
-          placeholder={placeholder}
-          placeholderTextColor="#89938F"
-          style={styles.input}
-          autoCapitalize="words"
-        />
+        {selectedPlace ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={`Alterar ${label.toLowerCase()}`} style={styles.selectedTextButton} onPress={editSelection}>
+            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.selectedText}>{selectionDisplayName(selectedPlace)}</Text>
+          </Pressable>
+        ) : (
+          <TextInput
+            ref={inputRef}
+            value={value}
+            onChangeText={(text) => {
+              selectedValue.current = undefined;
+              onChangeText(text);
+            }}
+            placeholder={placeholder}
+            placeholderTextColor="#89938F"
+            style={styles.input}
+            autoCapitalize="words"
+          />
+        )}
         {loading && <ActivityIndicator size="small" color={colors.primary} />}
         {!!value && !loading && <Pressable accessibilityLabel={`Limpar ${label.toLowerCase()}`} hitSlop={12} onPress={onClear}><Ionicons name="close" size={21} color={colors.text}/></Pressable>}
       </View>
@@ -106,6 +122,8 @@ const styles = StyleSheet.create({
   inputBox: { minHeight: 54, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.input, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: spacing.sm },
   pin: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  selectedTextButton: { flex: 1, minWidth: 0, minHeight: 42, justifyContent: 'center' },
+  selectedText: { color: colors.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
   message: { color: colors.danger, fontSize: 12, lineHeight: 17, marginTop: spacing.xs },
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginTop: spacing.xs, overflow: 'hidden', backgroundColor: colors.surface },
   suggestion: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

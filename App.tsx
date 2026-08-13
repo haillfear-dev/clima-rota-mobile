@@ -18,7 +18,7 @@ import { coordinatesToPlace } from './src/services/geocoding';
 import { routingService } from './src/services/routing';
 import { colors, spacing } from './src/theme';
 import type { FavoriteRoute, Place, SavedPlace, SavedPlaceLabel, TravelMode, Trip } from './src/types';
-import { shortAddress } from './src/utils/address';
+import { selectionDisplayName } from './src/utils/address';
 
 type Field = 'origin' | 'destination';
 
@@ -45,8 +45,8 @@ export default function App() {
     setPlaces(savedPlaces); setRoutes(favoriteRoutes);
   }
   function setField(field: Field, place: Place) {
-    if (field === 'origin') { setOrigin(place); setOriginText(shortAddress(place)); }
-    else { setDestination(place); setDestinationText(shortAddress(place)); }
+    if (field === 'origin') { setOrigin(place); setOriginText(selectionDisplayName(place)); }
+    else { setDestination(place); setDestinationText(selectionDisplayName(place)); }
     setTrip(undefined);
   }
   async function useLocation(field: Field = 'origin') {
@@ -111,8 +111,8 @@ export default function App() {
         <Shortcut icon="home-outline" label="Casa" onPress={() => savedPlaceAction('Casa')}/>
         <Shortcut icon="briefcase-outline" label="Trabalho" onPress={() => savedPlaceAction('Trabalho')}/>
       </View>
-      <AddressAutocomplete proximity={deviceLocation} variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onClear={() => { setOriginText(''); setOrigin(undefined); setTrip(undefined); }} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
-      <AddressAutocomplete proximity={deviceLocation} variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onClear={() => { setDestinationText(''); setDestination(undefined); setTrip(undefined); }} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
+      <AddressAutocomplete selectedPlace={origin} proximity={deviceLocation} variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onEdit={() => { setOrigin(undefined); setTrip(undefined); }} onClear={() => { setOriginText(''); setOrigin(undefined); setTrip(undefined); }} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
+      <AddressAutocomplete selectedPlace={destination} proximity={deviceLocation} variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onEdit={() => { setDestination(undefined); setTrip(undefined); }} onClear={() => { setDestinationText(''); setDestination(undefined); setTrip(undefined); }} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
       <TravelModeSelector value={travelMode} onChange={(mode) => { setTravelMode(mode); setTrip(undefined); }}/>
       <Button title="Preparar viagem" icon="arrow-forward" loading={tripLoading} onPress={() => void prepareWith()}/>
     </Card>

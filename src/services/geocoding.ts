@@ -84,6 +84,7 @@ export const geoapifyProvider: GeocodingProvider = {
         name: feature.properties.formatted ?? [title, subtitle].filter(Boolean).join(', '),
         title,
         subtitle,
+        selectionLabel: title,
         latitude: feature.properties.lat,
         longitude: feature.properties.lon,
         geography: geography(feature),

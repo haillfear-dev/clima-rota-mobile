@@ -2,6 +2,8 @@ export type Place = {
   name: string;
   latitude: number;
   longitude: number;
+  /** The recognizable label shown when confirming the user's exact selection. */
+  selectionLabel?: string;
   geography?: GeographicMetadata;
 };
 
