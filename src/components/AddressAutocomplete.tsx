@@ -12,10 +12,11 @@ type Props = {
   value: string;
   onChangeText: (value: string) => void;
   onSelect: (place: Place) => void;
+  onClear?: () => void;
   variant?: 'origin' | 'destination';
 };
 
-export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, variant = 'origin' }: Props) {
+export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, onClear, variant = 'origin' }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -79,6 +80,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
           autoCapitalize="words"
         />
         {loading && <ActivityIndicator size="small" color={colors.primary} />}
+        {!!value && !loading && <Pressable accessibilityLabel={`Limpar ${label.toLowerCase()}`} hitSlop={12} onPress={onClear}><Ionicons name="close" size={21} color={colors.text}/></Pressable>}
       </View>
       {!!message && <Text style={styles.message}>{message}</Text>}
       {!!suggestions.length && (
@@ -100,7 +102,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: spacing.sm },
-  inputBox: { minHeight: 58, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.input, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: spacing.sm },
+  inputBox: { minHeight: 54, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.input, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: spacing.sm },
   pin: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   message: { color: colors.danger, fontSize: 12, lineHeight: 17, marginTop: spacing.xs },
