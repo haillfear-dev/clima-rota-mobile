@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { geocodingService, GeocodingConfigurationError } from '../services/geocoding';
 import { colors, radius, spacing } from '../theme';
 import type { AddressSuggestion, Place } from '../types';
+import { shortAddress } from '../utils/address';
 
 type Props = {
   label: string;
@@ -11,13 +12,14 @@ type Props = {
   value: string;
   onChangeText: (value: string) => void;
   onSelect: (place: Place) => void;
+  variant?: 'origin' | 'destination';
 };
 
-export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect }: Props) {
+export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, variant = 'origin' }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>();
-  const selectedValue = useRef<string>();
+  const selectedValue = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (value === selectedValue.current || value.trim().length < 3) {
@@ -54,7 +56,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
   }, [value]);
 
   function select(suggestion: AddressSuggestion) {
-    selectedValue.current = suggestion.name;
+    selectedValue.current = shortAddress(suggestion.name);
     setSuggestions([]);
     setMessage(undefined);
     onSelect(suggestion);
@@ -64,7 +66,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
     <View>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputBox}>
-        <Ionicons name="location-outline" size={20} color={colors.muted} />
+        <View style={[styles.pin, { backgroundColor: variant === 'origin' ? colors.turquoise : colors.orange }]}><Ionicons name={variant === 'origin' ? 'ellipse' : 'location'} size={variant === 'origin' ? 9 : 16} color="#fff" /></View>
         <TextInput
           value={value}
           onChangeText={(text) => {
@@ -98,8 +100,9 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '800', color: colors.text, marginBottom: spacing.sm },
-  inputBox: { height: 54, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.input, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: spacing.sm },
-  input: { flex: 1, fontSize: 16, color: colors.text },
+  inputBox: { minHeight: 58, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.input, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, gap: spacing.sm },
+  pin: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   message: { color: colors.danger, fontSize: 12, lineHeight: 17, marginTop: spacing.xs },
   list: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginTop: spacing.xs, overflow: 'hidden', backgroundColor: colors.surface },
   suggestion: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
