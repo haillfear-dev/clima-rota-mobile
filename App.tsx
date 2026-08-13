@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { AddressAutocomplete } from './src/components/AddressAutocomplete';
 import { FavoriteRoutesSection, SavedPlacesSection } from './src/components/SavedSections';
 import { TripSummary } from './src/components/TripSummary';
 import { SideMenu } from './src/components/SideMenu';
-import { TropicalBackground } from './src/components/TropicalBackground';
+import { BeachFooter, TropicalHero } from './src/components/TropicalBackground';
 import { Button, Card } from './src/components/Ui';
 import { favoriteRoutesService } from './src/services/favoriteRoutes';
 import { savedPlacesService } from './src/services/savedPlaces';
@@ -31,6 +31,7 @@ export default function App() {
   const [trip, setTrip] = useState<Trip>();
   const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
 
   useEffect(() => { void refreshSaved(); }, []);
   async function refreshSaved() {
@@ -95,24 +96,22 @@ export default function App() {
   }
 
   const isFavorite = !!trip && routes.some((route) => sameTrip(route, trip));
-  return <SafeAreaView style={styles.safe}><StatusBar style="dark"/><TropicalBackground/><KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-    <View style={styles.brand}><View><Text style={styles.logo}>Vora<Text style={styles.dot}>.</Text></Text><Text style={styles.tagline}>Saiba antes de sair.</Text></View><Pressable accessibilityLabel="Abrir menu" style={styles.menuButton} onPress={() => setMenuOpen(true)}><Ionicons name="menu" size={29} color={colors.primary}/></Pressable></View>
-    <View style={styles.hero}><Text style={styles.title}>Para onde{`\n`}você vai?</Text><Text style={styles.subtitle}>Prepare seu deslocamento{`\n`}em poucos segundos.</Text></View>
-    <Card>
+  return <SafeAreaView style={styles.safe}><StatusBar style="dark"/><KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
+    <TropicalHero><View style={styles.heroContent}><View style={styles.brand}><View><Text style={styles.logo}>Vora<Text style={styles.dot}>.</Text></Text><Text style={styles.tagline}>Saiba antes de sair.</Text></View><Pressable accessibilityLabel="Abrir menu" style={styles.menuButton} onPress={() => setMenuOpen(true)}><Ionicons name="menu" size={29} color={colors.primary}/></Pressable></View><View style={styles.heroCopy}><Text style={styles.title}>Para onde{`\n`}você vai?</Text><Text style={styles.subtitle}>Prepare seu deslocamento{`\n`}em poucos segundos.</Text></View></View></TropicalHero>
+    <View style={styles.content}><Card style={styles.searchCard}>
       <View style={styles.shortcuts}>
         <Shortcut icon="locate-outline" label="Localização" loading={locationLoading} onPress={() => void useLocation()}/>
         <Shortcut icon="home-outline" label="Casa" onPress={() => savedPlaceAction('Casa')}/>
         <Shortcut icon="briefcase-outline" label="Trabalho" onPress={() => savedPlaceAction('Trabalho')}/>
       </View>
-      <AddressAutocomplete variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
-      <AddressAutocomplete variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
+      <AddressAutocomplete variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onClear={() => { setOriginText(''); setOrigin(undefined); setTrip(undefined); }} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
+      <AddressAutocomplete variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onClear={() => { setDestinationText(''); setDestination(undefined); setTrip(undefined); }} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
       <Button title="Preparar viagem" icon="arrow-forward" loading={tripLoading} onPress={() => void prepareWith()}/>
     </Card>
     {trip && <TripSummary trip={trip} isFavorite={isFavorite} onSave={() => void toggleRoute()}/>}
-    <SavedPlacesSection places={places} onPress={savedPlaceAction} onDelete={(label) => void savedPlacesService.remove(label).then(refreshSaved)}/>
-    <FavoriteRoutesSection routes={routes} onPress={(route) => void openRoute(route)} onDelete={(id) => void favoriteRoutesService.remove(id).then(refreshSaved)}/>
-    <Text style={styles.footer}>Vora · informações para decidir antes de navegar</Text>
-  </ScrollView></KeyboardAvoidingView><SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} onNavigate={(section) => scrollRef.current?.scrollTo({ y: section === 'Início' ? 0 : section === 'Meus lugares' ? 1150 : 1500, animated: true })}/></SafeAreaView>;
+    <View style={[styles.savedGrid, width < 560 && styles.savedGridNarrow]}><View style={styles.placesColumn}><SavedPlacesSection places={places} onPress={savedPlaceAction} onDelete={(label) => void savedPlacesService.remove(label).then(refreshSaved)}/></View><View style={styles.routesColumn}><FavoriteRoutesSection routes={routes} onPress={(route) => void openRoute(route)} onDelete={(id) => void favoriteRoutesService.remove(id).then(refreshSaved)}/></View></View>
+    <BeachFooter/></View>
+  </ScrollView></KeyboardAvoidingView><SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} onNavigate={(section) => scrollRef.current?.scrollTo({ y: section === 'Início' ? 0 : section === 'Meus lugares' ? 1200 : 1450, animated: true })}/></SafeAreaView>;
 }
 
 function sameTrip(route: FavoriteRoute, trip: Trip) { return route.origin.latitude === trip.origin.latitude && route.origin.longitude === trip.origin.longitude && route.destination.latitude === trip.destination.latitude && route.destination.longitude === trip.destination.longitude; }
@@ -122,4 +121,4 @@ function Shortcut({ icon, label, onPress, loading }: { icon: keyof typeof Ionico
   return <Pressable style={({ pressed }) => [styles.shortcut, pressed && { opacity: 0.7 }]} onPress={onPress} disabled={loading}><View style={[styles.shortcutIcon, { backgroundColor: `${tint}18` }]}><Ionicons name={icon} size={25} color={tint}/></View><Text style={styles.shortcutText}>{loading ? 'Buscando…' : label}</Text></Pressable>;
 }
 
-const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.background, paddingTop: Platform.OS === 'android' ? 22 : 0 }, flex: { flex: 1 }, content: { padding: spacing.md, paddingTop: spacing.lg, paddingBottom: 60, gap: spacing.lg, maxWidth: 680, width: '100%', alignSelf: 'center' }, brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, logo: { fontSize: 40, fontWeight: '900', letterSpacing: -2, color: colors.primary }, dot: { color: colors.orange }, tagline: { color: colors.text, fontSize: 14, fontWeight: '700' }, menuButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#765218', shadowOpacity: .12, shadowRadius: 9, elevation: 3 }, hero: { minHeight: 235, justifyContent: 'center' }, title: { fontSize: 34, lineHeight: 39, fontWeight: '900', letterSpacing: -1, color: colors.text }, subtitle: { fontSize: 16, lineHeight: 23, color: colors.text, fontWeight: '600', marginTop: spacing.md }, shortcuts: { flexDirection: 'row', gap: spacing.sm }, shortcut: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 3 }, shortcutIcon: { width: 39, height: 39, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, shortcutText: { fontSize: 11, fontWeight: '800', color: colors.text, textAlign: 'center' }, footer: { textAlign: 'center', fontSize: 12, color: colors.muted } });
+const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.background, paddingTop: Platform.OS === 'android' ? 22 : 0 }, flex: { flex: 1 }, scroll: { backgroundColor: colors.background }, content: { paddingHorizontal: spacing.md, paddingBottom: 60, gap: spacing.sm, maxWidth: 760, width: '100%', alignSelf: 'center' }, heroContent: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: 68 }, brand: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }, logo: { fontSize: 45, lineHeight: 49, fontWeight: '900', letterSpacing: -2.5, color: colors.primary }, dot: { color: colors.orange }, tagline: { color: colors.text, fontSize: 15, fontWeight: '800' }, menuButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', shadowColor: '#765218', shadowOpacity: .16, shadowRadius: 9, elevation: 4 }, heroCopy: { marginTop: 72, maxWidth: 300 }, title: { fontSize: 35, lineHeight: 39, fontWeight: '900', letterSpacing: -1, color: colors.text }, subtitle: { fontSize: 15, lineHeight: 21, color: colors.text, fontWeight: '700', marginTop: spacing.md }, searchCard: { marginTop: -42, padding: spacing.md }, shortcuts: { flexDirection: 'row', gap: spacing.sm }, shortcut: { flex: 1, minWidth: 0, minHeight: 78, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 3 }, shortcutIcon: { width: 37, height: 37, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, shortcutText: { fontSize: 11, fontWeight: '800', color: colors.text, textAlign: 'center' }, savedGrid: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' }, savedGridNarrow: { flexDirection: 'column' }, placesColumn: { flex: 4 }, routesColumn: { flex: 6 } });
