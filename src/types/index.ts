@@ -4,6 +4,16 @@ export type Place = {
   longitude: number;
 };
 
+export type TravelMode = 'driving' | 'transit' | 'walking' | 'bicycling';
+
+export type RouteEstimate = {
+  distanceMeters: number;
+  durationSeconds: number;
+  origin: Place;
+  destination: Place;
+  mode: TravelMode;
+};
+
 export type AddressSuggestion = Place & {
   id: string;
   title: string;
@@ -22,7 +32,8 @@ export type Weather = {
 export type Trip = {
   origin: Place;
   destination: Place;
-  distanceKm: number;
+  routeEstimate: RouteEstimate;
+  mode: TravelMode;
   originWeather: Weather;
   destinationWeather: Weather;
 };

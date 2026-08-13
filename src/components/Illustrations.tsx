@@ -35,7 +35,7 @@ export function BeachFooterArt() { return <View pointerEvents="none" style={Styl
 
 export function WeatherIllustration({ type }: { type: WeatherScene }) {
   const cloud = type !== 'sunny'; const rain = type === 'rainy' || type === 'storm';
-  return <View style={styles.weatherArt}><View style={styles.weatherShadow}/>{(type === 'sunny' || type === 'partly') && <Sun small/>}{cloud && <Cloud style={[styles.weatherCloud, type === 'storm' && styles.stormCloud]}/>} {rain && <View style={styles.rain}><Ionicons name="water" size={13} color="#52BCE0"/><Ionicons name="water" size={15} color="#208DBD"/><Ionicons name="water" size={12} color="#70C9E5"/></View>}{type === 'storm' && <Ionicons name="flash" size={26} color="#F5A814" style={styles.flash}/>}</View>;
+  return <View style={styles.weatherArt}><View style={styles.weatherShadow}/>{(type === 'sunny' || type === 'partly') && <Sun small/>}{cloud && <Cloud style={[styles.weatherCloud, type === 'storm' && styles.stormCloud]}/>}{rain && <View style={styles.rain}><Ionicons name="water" size={13} color="#52BCE0"/><Ionicons name="water" size={15} color="#208DBD"/><Ionicons name="water" size={12} color="#70C9E5"/></View>}{type === 'storm' && <Ionicons name="flash" size={26} color="#F5A814" style={styles.flash}/>}</View>;
 }
 
 export function RouteIllustration({ scene }: { scene: RouteScene }) {

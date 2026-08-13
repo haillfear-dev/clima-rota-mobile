@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { AddressAutocomplete } from './src/components/AddressAutocomplete';
 import { FavoriteRoutesSection, SavedPlacesSection } from './src/components/SavedSections';
+import { TravelModeSelector } from './src/components/TravelModeSelector';
+import { FeedbackModal } from './src/components/FeedbackModal';
 import { TripSummary } from './src/components/TripSummary';
 import { SideMenu } from './src/components/SideMenu';
 import { BeachFooter, TropicalHero } from './src/components/TropicalBackground';
@@ -12,9 +14,10 @@ import { Button, Card } from './src/components/Ui';
 import { favoriteRoutesService } from './src/services/favoriteRoutes';
 import { savedPlacesService } from './src/services/savedPlaces';
 import { getCurrentWeather } from './src/services/weather';
+import { coordinatesToPlace } from './src/services/geocoding';
+import { routingService } from './src/services/routing';
 import { colors, spacing } from './src/theme';
-import type { FavoriteRoute, Place, SavedPlace, SavedPlaceLabel, Trip } from './src/types';
-import { haversineKm } from './src/utils/distance';
+import type { FavoriteRoute, Place, SavedPlace, SavedPlaceLabel, TravelMode, Trip } from './src/types';
 import { shortAddress } from './src/utils/address';
 
 type Field = 'origin' | 'destination';
@@ -30,6 +33,9 @@ export default function App() {
   const [tripLoading, setTripLoading] = useState(false);
   const [trip, setTrip] = useState<Trip>();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [travelMode, setTravelMode] = useState<TravelMode>('driving');
+  const [deviceLocation, setDeviceLocation] = useState<Place>();
   const scrollRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
 
@@ -49,7 +55,8 @@ export default function App() {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== 'granted') { Alert.alert('Localização não permitida', 'Sem problemas: pesquise seu endereço manualmente.'); return; }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setField(field, { name: 'Minha localização atual', latitude: position.coords.latitude, longitude: position.coords.longitude });
+      const place = await coordinatesToPlace(position.coords.latitude, position.coords.longitude);
+      setDeviceLocation(place); setField(field, place);
     } catch { Alert.alert('Localização indisponível', 'Não conseguimos obter sua localização. Digite a origem manualmente.'); }
     finally { setLocationLoading(false); }
   }
@@ -57,8 +64,8 @@ export default function App() {
     if (!from || !to) { Alert.alert('Selecione os endereços', 'Escolha uma sugestão válida para origem e destino.'); return; }
     setTripLoading(true);
     try {
-      const [originWeather, destinationWeather] = await Promise.all([getCurrentWeather(from), getCurrentWeather(to)]);
-      setTrip({ origin: from, destination: to, distanceKm: haversineKm(from, to), originWeather, destinationWeather });
+      const [originWeather, destinationWeather, routeEstimate] = await Promise.all([getCurrentWeather(from), getCurrentWeather(to), routingService.estimate(from, to, travelMode)]);
+      setTrip({ origin: from, destination: to, routeEstimate, mode: travelMode, originWeather, destinationWeather });
     } catch (error) { Alert.alert('Não foi possível preparar a viagem', error instanceof Error ? error.message : 'Tente novamente em instantes.'); }
     finally { setTripLoading(false); }
   }
@@ -104,14 +111,15 @@ export default function App() {
         <Shortcut icon="home-outline" label="Casa" onPress={() => savedPlaceAction('Casa')}/>
         <Shortcut icon="briefcase-outline" label="Trabalho" onPress={() => savedPlaceAction('Trabalho')}/>
       </View>
-      <AddressAutocomplete variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onClear={() => { setOriginText(''); setOrigin(undefined); setTrip(undefined); }} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
-      <AddressAutocomplete variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onClear={() => { setDestinationText(''); setDestination(undefined); setTrip(undefined); }} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
+      <AddressAutocomplete proximity={deviceLocation} variant="origin" label="Origem" placeholder="Rua, endereço ou lugar" value={originText} onClear={() => { setOriginText(''); setOrigin(undefined); setTrip(undefined); }} onChangeText={(text) => { setOriginText(text); setOrigin(undefined); }} onSelect={(place) => setField('origin', place)}/>
+      <AddressAutocomplete proximity={deviceLocation} variant="destination" label="Destino" placeholder="Para onde vamos?" value={destinationText} onClear={() => { setDestinationText(''); setDestination(undefined); setTrip(undefined); }} onChangeText={(text) => { setDestinationText(text); setDestination(undefined); }} onSelect={(place) => setField('destination', place)}/>
+      <TravelModeSelector value={travelMode} onChange={(mode) => { setTravelMode(mode); setTrip(undefined); }}/>
       <Button title="Preparar viagem" icon="arrow-forward" loading={tripLoading} onPress={() => void prepareWith()}/>
     </Card>
     {trip && <TripSummary trip={trip} isFavorite={isFavorite} onSave={() => void toggleRoute()}/>}
     <View style={[styles.savedGrid, width < 560 && styles.savedGridNarrow]}><View style={styles.placesColumn}><SavedPlacesSection places={places} onPress={savedPlaceAction} onDelete={(label) => void savedPlacesService.remove(label).then(refreshSaved)}/></View><View style={styles.routesColumn}><FavoriteRoutesSection routes={routes} onPress={(route) => void openRoute(route)} onDelete={(id) => void favoriteRoutesService.remove(id).then(refreshSaved)}/></View></View>
     <BeachFooter/></View>
-  </ScrollView></KeyboardAvoidingView><SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} onNavigate={(section) => scrollRef.current?.scrollTo({ y: section === 'Início' ? 0 : section === 'Meus lugares' ? 1200 : 1450, animated: true })}/></SafeAreaView>;
+  </ScrollView></KeyboardAvoidingView><SideMenu visible={menuOpen} onFeedback={() => setFeedbackOpen(true)} onClose={() => setMenuOpen(false)} onNavigate={(section) => scrollRef.current?.scrollTo({ y: section === 'Início' ? 0 : section === 'Meus lugares' ? 1200 : 1450, animated: true })}/><FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)}/></SafeAreaView>;
 }
 
 function sameTrip(route: FavoriteRoute, trip: Trip) { return route.origin.latitude === trip.origin.latitude && route.origin.longitude === trip.origin.longitude && route.destination.latitude === trip.destination.latitude && route.destination.longitude === trip.destination.longitude; }

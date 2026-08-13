@@ -7,10 +7,11 @@ import { RouteIllustration } from './Illustrations';
 const items = [
   ['home', 'Início'], ['location', 'Meus lugares'], ['star', 'Rotas favoritas'],
   ['settings', 'Configurações'], ['notifications', 'Notificações'],
+  ['chatbox-ellipses', 'Sugestões e reportar bugs'],
   ['information-circle', 'Sobre o Vora'], ['help-circle', 'Ajuda'],
 ] as const;
 
-export function SideMenu({ visible, onClose, onNavigate }: { visible: boolean; onClose: () => void; onNavigate: (section: string) => void }) {
+export function SideMenu({ visible, onClose, onNavigate, onFeedback }: { visible: boolean; onClose: () => void; onNavigate: (section: string) => void; onFeedback: () => void }) {
   const width = Math.min(Dimensions.get('window').width * .84, 340);
   const translateX = useRef(new Animated.Value(width)).current;
   useEffect(() => {
@@ -18,7 +19,8 @@ export function SideMenu({ visible, onClose, onNavigate }: { visible: boolean; o
     Animated.timing(translateX, { toValue: visible ? 0 : width, duration: 260, useNativeDriver: true }).start();
   }, [translateX, visible, width]);
   const choose = (label: string) => {
-    if (['Início', 'Meus lugares', 'Rotas favoritas'].includes(label)) onNavigate(label);
+    if (label === 'Sugestões e reportar bugs') onFeedback();
+    else if (['Início', 'Meus lugares', 'Rotas favoritas'].includes(label)) onNavigate(label);
     else Alert.alert(label, 'Esta área estará disponível em uma próxima atualização.');
     onClose();
   };

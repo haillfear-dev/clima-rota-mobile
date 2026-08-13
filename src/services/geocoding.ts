@@ -3,7 +3,7 @@ import type { AddressSuggestion, Place } from '../types';
 export class GeocodingConfigurationError extends Error {}
 
 export type GeocodingProvider = {
-  autocomplete(query: string, signal?: AbortSignal): Promise<AddressSuggestion[]>;
+  autocomplete(query: string, signal?: AbortSignal, proximity?: Place): Promise<AddressSuggestion[]>;
 };
 
 type GeoapifyFeature = {
@@ -32,7 +32,7 @@ function addressParts(feature: GeoapifyFeature) {
 }
 
 export const geoapifyProvider: GeocodingProvider = {
-  async autocomplete(query, signal) {
+  async autocomplete(query, signal, proximity) {
     if (!apiKey) {
       throw new GeocodingConfigurationError(
         'Configure EXPO_PUBLIC_GEOAPIFY_API_KEY no arquivo .env para pesquisar endereços.',
@@ -46,6 +46,7 @@ export const geoapifyProvider: GeocodingProvider = {
       lang: 'pt',
       format: 'geojson',
     });
+    if (proximity) params.set('bias', `proximity:${proximity.longitude},${proximity.latitude}`);
     const response = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?${params}`, { signal });
     if (!response.ok) throw new Error('Não foi possível buscar endereços agora.');
     const data = (await response.json()) as { features: GeoapifyFeature[] };
@@ -67,5 +68,10 @@ export const geoapifyProvider: GeocodingProvider = {
 export const geocodingService = geoapifyProvider;
 
 export async function coordinatesToPlace(latitude: number, longitude: number): Promise<Place> {
-  return { name: 'Minha localização atual', latitude, longitude };
+  if (!apiKey) return { name: 'Minha localização atual', latitude, longitude };
+  const params = new URLSearchParams({ lat: String(latitude), lon: String(longitude), apiKey, lang: 'pt', format: 'geojson' });
+  const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params}`);
+  if (!response.ok) return { name: 'Minha localização atual', latitude, longitude };
+  const data = await response.json() as { features?: GeoapifyFeature[] };
+  return { name: data.features?.[0]?.properties.formatted ?? 'Minha localização atual', latitude, longitude };
 }

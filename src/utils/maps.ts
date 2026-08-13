@@ -1,2 +1,3 @@
-import type { Trip } from '../types';
-export function googleMapsUrl(t:Trip):string{const origin=`${t.origin.latitude},${t.origin.longitude}`,destination=`${t.destination.latitude},${t.destination.longitude}`;return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`}
+import type { Trip, TravelMode } from '../types';
+export function googleMapsUrl(t:Trip):string{const origin=`${t.origin.latitude},${t.origin.longitude}`,destination=`${t.destination.latitude},${t.destination.longitude}`;return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${t.mode}`}
+export const mapsButtonLabel: Record<TravelMode, string> = { driving:'Abrir rota no Google Maps',transit:'Ver transporte público no Google Maps',walking:'Ver rota a pé no Google Maps',bicycling:'Ver rota de bicicleta no Google Maps' };

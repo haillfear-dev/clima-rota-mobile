@@ -14,9 +14,10 @@ type Props = {
   onSelect: (place: Place) => void;
   onClear?: () => void;
   variant?: 'origin' | 'destination';
+  proximity?: Place;
 };
 
-export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, onClear, variant = 'origin' }: Props) {
+export function AddressAutocomplete({ label, placeholder, value, onChangeText, onSelect, onClear, variant = 'origin', proximity }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -34,7 +35,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
       setLoading(true);
       setMessage(undefined);
       try {
-        const results = await geocodingService.autocomplete(value.trim(), controller.signal);
+        const results = await geocodingService.autocomplete(value.trim(), controller.signal, proximity);
         setSuggestions(results);
         if (!results.length) setMessage('Nenhum endereço encontrado. Tente incluir a cidade.');
       } catch (error) {
@@ -54,7 +55,7 @@ export function AddressAutocomplete({ label, placeholder, value, onChangeText, o
       clearTimeout(timer);
       controller.abort();
     };
-  }, [value]);
+  }, [value, proximity]);
 
   function select(suggestion: AddressSuggestion) {
     selectedValue.current = shortAddress(suggestion.name);

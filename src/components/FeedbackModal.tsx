@@ -1,0 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, radius, spacing } from '../theme';
+
+export function FeedbackModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const start = (category: 'Sugestão'|'Problema') => Alert.alert(category, 'Obrigado por ajudar a melhorar o Vora. O canal de envio estará disponível em breve.');
+  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}><View style={styles.overlay}><View style={styles.card}><Pressable accessibilityLabel="Fechar" style={styles.close} onPress={onClose}><Ionicons name="close" size={25} color={colors.text}/></Pressable><Text style={styles.title}>Sugestões e bugs</Text><Text style={styles.body}>Como podemos melhorar sua experiência?</Text><Pressable style={styles.action} onPress={() => start('Sugestão')}><Ionicons name="bulb-outline" size={22} color={colors.primary}/><Text style={styles.actionText}>Enviar sugestão</Text></Pressable><Pressable style={styles.action} onPress={() => start('Problema')}><Ionicons name="bug-outline" size={22} color={colors.orange}/><Text style={styles.actionText}>Reportar um problema</Text></Pressable></View></View></Modal>;
+}
+const styles=StyleSheet.create({overlay:{flex:1,backgroundColor:'rgba(3,43,45,.5)',alignItems:'center',justifyContent:'center',padding:spacing.lg},card:{width:'100%',maxWidth:420,backgroundColor:colors.surface,borderRadius:radius.lg,padding:spacing.lg,gap:spacing.md},close:{position:'absolute',right:14,top:14,zIndex:1},title:{fontSize:20,fontWeight:'900',color:colors.text},body:{color:colors.muted},action:{minHeight:54,borderRadius:radius.md,backgroundColor:colors.input,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md},actionText:{fontWeight:'800',color:colors.text}});
